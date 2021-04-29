@@ -5,6 +5,8 @@ c = Collection()
 
 c.load(Path("C:\\Users\\Ileana\\Documents\\Mi quinto\\IA\\Concurso\\Proyectos\\corpora\\2021\\ref\\training\\medline.1200.es.txt"))
 
+PosiblesValoresFrases=['Action', 'Concept', 'Predicate', 'Reference']
+PosiblesValoresRelaciones=['in-context', 'subject', 'same-as', 'is-a', 'target', 'entails', 'arg', 'domain', 'has-property', 'in-time', 'in-place', 'causes', 'part-of']
 
 def DetectarPosicionInicioSpan(frase:Keyphrase):
     inicio,_=frase.spans[0]
@@ -117,11 +119,17 @@ def TamannoFrasesBajoNivel(cantidadCategorias:int, tammanoMaximo:int):
 def TamannoRelacionesBajoNivel(cantidadCategorias:int, tammanoMaximo:int):
     return tamannoMaximo*tammanoMaximo*cantidadCategorias
 
-
+frases={}
+relaciones={}
 for s in c.sentences:
-    print(s)
-    for k in s.keyphrases:
-        print(DetectarPosicionInicioSpan(k))
-print(c)
+    for f in s.keyphrases:
+        frases[f.label]=True
+    for r in s.relations:
+        relaciones[r.label]=True
+print("|--------|")
+print(frases.keys())
+print("--------")
+print(relaciones.keys())
+print("|--------|")
     
     
