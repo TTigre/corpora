@@ -2,9 +2,9 @@ from anntools import *
 from pathlib import Path
 
 
-c = Collection()
+# c = Collection()
 
-c.load(Path("C:\\Users\\Ileana\\Documents\\Mi quinto\\IA\\Concurso\\Proyectos\\corpora\\2021\\ref\\training\\medline.1200.es.txt"))
+# c.load(Path("C:\\Users\\Ileana\\Documents\\Mi quinto\\IA\\Concurso\\Proyectos\\corpora\\2021\\ref\\training\\medline.1200.es.txt"))
 
 PosiblesValoresFrases=['Action', 'Concept', 'Predicate', 'Reference']
 PosiblesValoresRelaciones=['in-context', 'subject', 'same-as', 'is-a', 'target', 'entails', 'arg', 'domain', 'has-property', 'in-time', 'in-place', 'causes', 'part-of']
@@ -18,19 +18,28 @@ def ParseaABool(origen):
         else:
             listaFinal.append(False)
     return listaFinal
-    
+def ParseaABoolVarios(origen):
+    resultados=[]
+    for element in origen:
+        resultados.append(ParseaABool(element))
+    return resultados
+
 def DetectarPosicionInicioSpan(frase:Keyphrase):
     inicio,_=frase.spans[0]
-    return len(frase.sentence.text[:inicio].strip().split())
+    inicioOracion=frase.sentence.text[:inicio]
+    oracionPartida=inicioOracion.strip('. ,:;()-_?!¿}¡[]"\'{+*-/').split()
+    return len(frase.sentence.text[:inicio].strip('. ,:;()-_?!¿}¡[]"\'{+*-/').split())
 
 def DetectarSpanPosicionInicio(posicion:int, texto:str):
     procesado=texto.strip().split()
+    # if posicion>=24:
+    #     print(25)
     if(posicion>=len(procesado)):
         return (0,0)
     palabra=procesado[posicion].strip('. ,:;()-_?!¿}¡[]"\'{+*-/')
     inicio=0
     for i in range(posicion+1):
-        inicio=texto.find(procesado[i],inicio)
+        inicio=texto.find(procesado[i].strip('. ,:;()-_?!¿}¡[]"\'{+*-/'),inicio)
     
     
     return (inicio,inicio+len(palabra))
@@ -101,6 +110,8 @@ def GenerarBajoNivelFrases(categorias:List[str], frases:List[Keyphrase], tamanno
     for k in frases:
         indice1=categorias.index(k.label)
         indice2=DetectarPosicionInicioSpan(k)
+        if indice2==26:
+            indice2=DetectarPosicionInicioSpan(k)
 
         frasesSinProcesar[indice1][indice2]=True
     
@@ -129,13 +140,13 @@ def GenerarBajoNivelRelaciones(categorias:List[str], frases:List[Keyphrase],rela
             indice1=categorias.index(r.label)
             indice2=DetectarPosicionInicioSpan(dicIDaFrase[r.origin])
             indice3=DetectarPosicionInicioSpan(dicIDaFrase[r.destination])
-        print(relacionesSinProcesar[0][0][9])
+        # print(relacionesSinProcesar[0][0][9])
 
         relacionesSinProcesar[indice1][indice2][indice3]=True
-        if(relacionesSinProcesar[0][0][9]):
-            print(indice1)
-            print(indice2)
-            print(indice3)
+        # if(relacionesSinProcesar[0][0][9]):
+        #     print(indice1)
+        #     print(indice2)
+        #     print(indice3)
 
     return relacionesSinProcesar
 
@@ -378,16 +389,48 @@ def BoolASentence(oracion:Sentence, lista:List[bool], categorias:List[str], rela
     nuevaoracion.keyphrases = keyphrases
     nuevaoracion.relations = relations
     return nuevaoracion
+
+def ArmarCollectionFromBool(respuesta:List[List[bool]],oraciones:List[Sentence],tamannoMaximo:int):
+    copia=PosiblesValoresRelaciones.copy()
+    if copia[-1]!="samebox":
+        copia.append("samebox")
+    listaOraciones=[]
+    for i in range(len(respuesta)):
+        lista=respuesta[i]
+        oracion=oraciones[i]
+        oracionFinal=BoolASentenceMio(oracion,lista,PosiblesValoresFrases,copia,tamannoMaximo)
+        for frase in oracionFinal.keyphrases:
+            frase.id+=i*tamannoMaximo*2+frase.id
+        for relacion in oracionFinal.relations:
+            relacion.origin=i*tamannoMaximo*2+relacion.origin
+            relacion.destination=i*tamannoMaximo*2+relacion.destination
+        listaOraciones.append(oracionFinal)
     
-salida=ObtenerSalidaFinalBool(c.sentences[1])
+    return Collection(listaOraciones)
+    
 
-oracionAnalizada=c.sentences[1]
-copia=PosiblesValoresRelaciones.copy()
-if copia[-1]!="samebox":
-    copia.append("samebox")
+    
+# salida=ObtenerSalidaFinalBool(c.sentences[40])
 
-denuevo=BoolASentenceMio(c.sentences[1],salida,PosiblesValoresFrases,copia,100)
-print(denuevo)
+# oracionAnalizada=c.sentences[40]
+# copia=PosiblesValoresRelaciones.copy()
+# if copia[-1]!="samebox":
+#     copia.append("samebox")
+# # maximo=0
+# salidas=[]
+# for s in c.sentences[:4]:
+#     salida=ObtenerSalidaFinalBool(s)
+#     salidas.append(salida)
+#     # denuevo=BoolASentenceMio(s,salida,PosiblesValoresFrases,copia,100)
+#     # for k in s.keyphrases:
+#     #     if k.id>maximo:
+#     #         maximo=k.id
+#     #         print(maximo)
+
+# nuevoC=ArmarCollectionFromBool(salidas,c.sentences[:4],100)
+# nuevoC.dump(Path("C:\\Users\\Ileana\\Documents\\Mi quinto\\IA\\Concurso\\Proyectos\\corpora\\2021\\submissions\\test\\medline.1200.es.txt"))
+# denuevo=BoolASentenceMio(c.sentences[800],salida,PosiblesValoresFrases,copia,100)
+# print(denuevo)
 
 # frases={}
 # relaciones={}
