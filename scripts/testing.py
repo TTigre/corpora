@@ -1,9 +1,11 @@
 from anntools import *
 from pathlib import Path
+import numpy as np
 
-# c = Collection()
 
-# c.load(Path("C:\\Users\\Ileana\\Documents\\Mi quinto\\IA\\Concurso\\Proyectos\\corpora\\2021\\ref\\training\\medline.1200.es.txt"))
+c = Collection()
+
+c.load(Path("C:\\Users\\Ileana\\Documents\\Mi quinto\\IA\\Concurso\\Proyectos\\corpora\\2021\\ref\\training\\medline.1200.es.txt"))
 
 PosiblesValoresFrases=['Action', 'Concept', 'Predicate', 'Reference']
 PosiblesValoresRelaciones=['in-context', 'subject', 'same-as', 'is-a', 'target', 'entails', 'arg', 'domain', 'has-property', 'in-time', 'in-place', 'causes', 'part-of']
@@ -26,20 +28,23 @@ def PreprocesarResultadoAltoNivel(oracion:Sentence):
     nuevaoracion=oracion.clone()
     nuevasFrases=[]
     nuevasRelaciones=[]
+    contador=0
     for frase in nuevaoracion.keyphrases:
         if len(frase.spans)>1:
             recienAgregadas=[]
             for s in frase.spans:
                 nuevospan=[]
                 nuevospan.append(s)
-                recienAgregadas.append(Keyphrase(nuevaoracion,frase.label,frase.id,nuevospan))
+                ultima=Keyphrase(nuevaoracion,frase.label,frase.id+500+contador,nuevospan)
+                recienAgregadas.append(ultima)
+                contador+=1
                 dicFrasesPartidas[frase.id]=recienAgregadas
             nuevasFrases.extend(recienAgregadas)
 
             for i in range(len(recienAgregadas)-1):
                 for e in range(i+1,len(recienAgregadas)):
-                    nuevaRelacion1=Relation(oracion,recienAgregadas[i],recienAgregadas[e],"samebox")
-                    nuevaRelacion2=Relation(oracion,recienAgregadas[e],recienAgregadas[i],"samebox")
+                    nuevaRelacion1=Relation(nuevaoracion,recienAgregadas[i].id,recienAgregadas[e].id,"samebox")
+                    nuevaRelacion2=Relation(nuevaoracion,recienAgregadas[e].id,recienAgregadas[i].id,"samebox")
                     nuevasRelaciones.append(nuevaRelacion1)
                     nuevasRelaciones.append(nuevaRelacion2)
 
@@ -50,22 +55,27 @@ def PreprocesarResultadoAltoNivel(oracion:Sentence):
         origenesRelacion=[relacion.origin,]
         destinosRelacion=[relacion.destination,]
 
-        if relacion.origin.id in dicFrasesPartidas.keys():
-            origenesRelacion=dicFrasesPartidas[relacion.origin.id]
+        if relacion.origin in dicFrasesPartidas.keys():
+            origenesRelacion2=dicFrasesPartidas[relacion.origin]
+            origenesRelacion=[]
+            for element in origenesRelacion2:
+                origenesRelacion.append(element.id)
         
-        if relacion.destination.id in dicFrasesPartidas.keys():
-            destinosRelacion=dicFrasesPartidas[relacion.destination.id]
+        if relacion.destination in dicFrasesPartidas.keys():
+            destinosRelacion2=dicFrasesPartidas[relacion.destination]
+            destinosRelacion=[]
+            for element in destinosRelacion2:
+                destinosRelacion.append(element.id)
 
         for origen in origenesRelacion:
             for destino in destinosRelacion:
-                nuevasRelaciones.append(Relation(oracion,origen,destino,relacion.label))
+                nuevasRelaciones.append(Relation(nuevaoracion,origen,destino,relacion.label))
                 if relacion.label=="same-as":
-                    nuevasRelaciones.append(Relation(oracion,destino,origen,relacion.label))
+                    nuevasRelaciones.append(Relation(nuevaoracion,destino,origen,relacion.label))
 
     nuevaoracion.keyphrases=nuevasFrases
     nuevaoracion.relations=nuevasRelaciones
     return nuevaoracion
-        
 
 
 def GenerarBajoNivelFrases(categorias:List[str], frases:List[Keyphrase], tamannoMaximo:int):
@@ -82,16 +92,20 @@ def GenerarBajoNivelFrases(categorias:List[str], frases:List[Keyphrase], tamanno
     
     return frasesSinProcesar
 
-def GenerarBajoNivelRelaciones(categorias:List[str], relaciones:List[Relation], tamannoMaximo:int):
+def GenerarBajoNivelRelaciones(categorias:List[str], frases:List[Keyphrase],relaciones:List[Relation], tamannoMaximo:int):
     relacionesSinProcesar=[]
     for c in categorias:
-        nuevalista=[[([False,]*tamannoMaximo),]*tamannoMaximo]
+        nuevalista=[([False,]*tamannoMaximo),]*tamannoMaximo
         relacionesSinProcesar.append(nuevalista)
     
+    dicIDaFrase={}
+    for element in frases:
+        dicIDaFrase[element.id]=element
+    
     for r in relaciones:
-        indice1=r.label
-        indice2=DetectarPosicionInicioSpan(r.origin)
-        indice3=DetectarPosicionInicioSpan(r.destination)
+        indice1=categorias.index(r.label)
+        indice2=DetectarPosicionInicioSpan(dicIDaFrase[r.origin])
+        indice3=DetectarPosicionInicioSpan(dicIDaFrase[r.destination])
 
         relacionesSinProcesar[indice1][indice2][indice3]=True
 
@@ -99,12 +113,12 @@ def GenerarBajoNivelRelaciones(categorias:List[str], relaciones:List[Relation], 
 
 def GenerarBajoNivelBool(categoriasFrases:List[str], categoriasRelaciones:List[str], frases:List[Keyphrase], relaciones:List[Relation], tamannoMaximo:int):
     frasessSinProcesar=GenerarBajoNivelFrases(categoriasFrases,frases,tamannoMaximo)
-    relacionesSinProcesar=GenerarBajoNivelRelaciones(categoriasRelaciones,relaciones,tamannoMaximo)
+    relacionesSinProcesar=GenerarBajoNivelRelaciones(categoriasRelaciones,frases,relaciones,tamannoMaximo)
 
     salidaBool=[]
     for i in frasessSinProcesar:
         for elemento in i:
-            salidaBool.append(i)
+            salidaBool.append(elemento)
 
     for i in relacionesSinProcesar:
         for e in i:
@@ -118,6 +132,18 @@ def TamannoFrasesBajoNivel(cantidadCategorias:int, tammanoMaximo:int):
 
 def TamannoRelacionesBajoNivel(cantidadCategorias:int, tammanoMaximo:int):
     return tamannoMaximo*tammanoMaximo*cantidadCategorias
+
+def ObtenerEntrada(oracion:Sentence):
+    return oracion.text
+
+def ObtenerSalidaFinalBool(oracion:Sentence):
+    oracion2=PreprocesarResultadoAltoNivel(oracion)
+    categoriasRelaciones=PosiblesValoresRelaciones.copy()
+    categoriasRelaciones.append("samebox")
+    salidaBool=GenerarBajoNivelBool(PosiblesValoresFrases,categoriasRelaciones,oracion2.keyphrases, oracion2.relations, 100)
+    return salidaBool
+
+salida=ObtenerSalida(c.sentences[0])
 
 # frases={}
 # relaciones={}
