@@ -108,6 +108,8 @@ def GenerarBajoNivelFrases(categorias:List[str], frases:List[Keyphrase], tamanno
         frasesSinProcesar.append(nuevalista)
 
     for k in frases:
+        if k.label not in categorias:
+            continue
         indice1=categorias.index(k.label)
         indice2=DetectarPosicionInicioSpan(k)
         if indice2==26:
@@ -133,6 +135,12 @@ def GenerarBajoNivelRelaciones(categorias:List[str], frases:List[Keyphrase],rela
         dicIDaFrase[element.id]=element
     
     for r in relaciones:
+        if r.label not in categorias:
+            continue
+        if r.origin not in dicIDaFrase.keys():
+            continue
+        if r.destination not in dicIDaFrase.keys():
+            continue
         indice1=categorias.index(r.label)
         indice2=DetectarPosicionInicioSpan(dicIDaFrase[r.origin])
         indice3=DetectarPosicionInicioSpan(dicIDaFrase[r.destination])
