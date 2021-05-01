@@ -143,6 +143,55 @@ def ObtenerSalidaFinalBool(oracion:Sentence):
     salidaBool=GenerarBajoNivelBool(PosiblesValoresFrases,categoriasRelaciones,oracion2.keyphrases, oracion2.relations, 100)
     return salidaBool
 
+def BoolASentence(oracion:Sentence, lista:[bool], categorias:List[str], relaciones:List[str],tamannoMaximo:int):
+    keyphrases = []
+    texto = oracion.text
+    for i in range(len(categorias)):
+        for j in range(tamannoMaximo):
+            if lista[i*tamannoMaximo + j]:
+                span = DetectarSpanPosicionInicio(j,text)
+                frase = Keyphrase(sentence = oracion, label=categorias[i], id = len(keyphrases), spans = [span])
+                keyphrases.append(frase)
+    dictspansfrases = {value.spans[0]: value for value in keyphrases}
+    finalfrases = len(categorias)*tamannoMaximo
+    kephrasesacombinar = []
+    relations = []
+    for i in range(len(relaciones)):
+        for j in range(tamannoMaximo):
+            for g in range(tamannoMaximo):
+                if lista[finalfrases + i*(tamannoMaximo**2) + j*tamannoMaximo + g]:
+                    spaninicio = DetectarSpanPosicionInicio(j,text)
+                    spanfinal = DetectarSpanPosicionInicio(g,text)
+                    if relaciones[i] is "samebox":
+                        AgregarCombinacion(kephrasesacombinar,dictspansfrases[spaninicio].id,dictspansfrases[spanfinal].id)
+                    else:   
+                        relacion = Relation(sentence = oracion, origin = dictspansfrases[spaninicio].id, destination = dictspansfrases[spanfinal].id, label = relaciones[i])
+                        relations.append(relacion)
+    for comb in kephrasesacombinar:
+        for i in range(1,len(comb)):
+            keyphrases[comb[0]].spans.append(keyphrases[comb[i]].spans[0])
+            keyphrases[comb[0]].spans.sort()
+            keyphrases.pop(comb[i])
+            relations = [elem for elem in relations if elem.origin != comb[i] and elem.destination != comb[i]]
+    nuevaoracion = oracion.clon()
+    nuevaoracion.keyphrases = keyphrases
+    nuevaoracion.relations = relations
+    return nuevaoracion
+
+def AgregarCombinacion(lista, idinicio,idfinal):
+    for elem in lista:
+        if idinicio in elem and idfinal in elem:
+            return
+        if idinicio in elem:
+            elem.append(idfinal)
+            elem.sort()
+            return
+        if idfinal in elem:
+            elem.append(idinicio)
+            elem.sort()
+            return
+    elem.append([idinicio,idfinal].sort())
+    
 # salida=ObtenerSalida(c.sentences[0])
 
 # frases={}
