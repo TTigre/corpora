@@ -3,9 +3,9 @@ from pathlib import Path
 import numpy as np
 
 
-c = Collection()
+# c = Collection()
 
-c.load(Path("C:\\Users\\Ileana\\Documents\\Mi quinto\\IA\\Concurso\\Proyectos\\corpora\\2021\\ref\\training\\medline.1200.es.txt"))
+# c.load(Path("C:\\Users\\Ileana\\Documents\\Mi quinto\\IA\\Concurso\\Proyectos\\corpora\\2021\\ref\\training\\medline.1200.es.txt"))
 
 PosiblesValoresFrases=['Action', 'Concept', 'Predicate', 'Reference']
 PosiblesValoresRelaciones=['in-context', 'subject', 'same-as', 'is-a', 'target', 'entails', 'arg', 'domain', 'has-property', 'in-time', 'in-place', 'causes', 'part-of']
@@ -143,7 +143,7 @@ def ObtenerSalidaFinalBool(oracion:Sentence):
     salidaBool=GenerarBajoNivelBool(PosiblesValoresFrases,categoriasRelaciones,oracion2.keyphrases, oracion2.relations, 100)
     return salidaBool
 
-salida=ObtenerSalida(c.sentences[0])
+# salida=ObtenerSalida(c.sentences[0])
 
 # frases={}
 # relaciones={}
