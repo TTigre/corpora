@@ -11,7 +11,7 @@ PosiblesValoresRelaciones=['in-context', 'subject', 'same-as', 'is-a', 'target',
 # print(len(PosiblesValoresRelaciones))
 
 def ParseaABool(origen):
-    listaFinal=[]
+    listaFinal:List[bool]=[]
     for element in origen:
         if element>=0.5:
             listaFinal.append(True)
@@ -112,8 +112,8 @@ def GenerarBajoNivelFrases(categorias:List[str], frases:List[Keyphrase], tamanno
             continue
         indice1=categorias.index(k.label)
         indice2=DetectarPosicionInicioSpan(k)
-        if indice2==26:
-            indice2=DetectarPosicionInicioSpan(k)
+        # if indice2==26:
+        #     indice2=DetectarPosicionInicioSpan(k)
 
         frasesSinProcesar[indice1][indice2]=True
     
@@ -210,7 +210,10 @@ def BoolAFrasesMio(oracion:Sentence, lista:List[bool], categorias:List[str], tam
     for i in range(len(categorias)):
         for j in range(tamannoMaximo):
             if(lista[i*tamannoMaximo+j]):
-                nuevaFrase=Keyphrase(oracion,categorias[i],countID,[DetectarSpanPosicionInicio(j,oracion.text)])
+                elspan=DetectarSpanPosicionInicio(j,oracion.text)
+                if elspan==(0,0):
+                    continue
+                nuevaFrase=Keyphrase(oracion,categorias[i],countID,[elspan])
                 countID+=1
                 listaFrases.append(nuevaFrase)
     
@@ -408,7 +411,7 @@ def ArmarCollectionFromBool(respuesta:List[List[bool]],oraciones:List[Sentence],
         oracion=oraciones[i]
         oracionFinal=BoolASentenceMio(oracion,lista,PosiblesValoresFrases,copia,tamannoMaximo)
         for frase in oracionFinal.keyphrases:
-            frase.id+=i*tamannoMaximo*2+frase.id
+            frase.id=i*tamannoMaximo*2+frase.id
         for relacion in oracionFinal.relations:
             relacion.origin=i*tamannoMaximo*2+relacion.origin
             relacion.destination=i*tamannoMaximo*2+relacion.destination
@@ -426,7 +429,7 @@ def ArmarCollectionFromBool(respuesta:List[List[bool]],oraciones:List[Sentence],
 #     copia.append("samebox")
 # # maximo=0
 # salidas=[]
-# for s in c.sentences[:4]:
+# for s in c.sentences[100:104]:
 #     salida=ObtenerSalidaFinalBool(s)
 #     salidas.append(salida)
 #     # denuevo=BoolASentenceMio(s,salida,PosiblesValoresFrases,copia,100)
@@ -435,7 +438,7 @@ def ArmarCollectionFromBool(respuesta:List[List[bool]],oraciones:List[Sentence],
 #     #         maximo=k.id
 #     #         print(maximo)
 
-# nuevoC=ArmarCollectionFromBool(salidas,c.sentences[:4],100)
+# nuevoC=ArmarCollectionFromBool(salidas,c.sentences[100:104],100)
 # nuevoC.dump(Path("C:\\Users\\Ileana\\Documents\\Mi quinto\\IA\\Concurso\\Proyectos\\corpora\\2021\\submissions\\test\\medline.1200.es.txt"))
 # denuevo=BoolASentenceMio(c.sentences[800],salida,PosiblesValoresFrases,copia,100)
 # print(denuevo)
